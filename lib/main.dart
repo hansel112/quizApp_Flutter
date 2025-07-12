@@ -1,138 +1,148 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+import 'quiz_bain.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+QuizBrain quizBrain = QuizBrain();
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+void main() => runApp(Quizzler());
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  bool get useLightMode {
-    switch (_themeMode) {
-      case ThemeMode.system:
-        return SchedulerBinding.instance.window.platformBrightness ==
-            Brightness.light;
-      case ThemeMode.light:
-        return true;
-      case ThemeMode.dark:
-        return false;
-    }
-  }
-
-  // This widget is the root of your application.
+class Quizzler extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Demo',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-      themeMode: _themeMode,
-      home: MyHomePage(
-        title: 'Material 3 Demo',
-        useLightMode: useLightMode,
-        handleBrightnessChange: (useLightMode) => setState(() {
-          _themeMode = useLightMode ? ThemeMode.light : ThemeMode.dark;
-        }),
+      home: Scaffold(
+        backgroundColor: Colors.grey.shade800,
+        appBar: AppBar(
+          title: Center(
+              child: Text(
+            'Quizzler',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 40.0,
+              fontWeight: FontWeight.bold,
+            ),
+          )),
+          backgroundColor: Colors.grey.shade900,
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            child: QuizPage(),
+          ),
+        ),
       ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({
-    super.key,
-    required this.title,
-    required this.handleBrightnessChange,
-    required this.useLightMode,
-  });
-  final String title;
-  final bool useLightMode;
-  final void Function(bool useLightMode) handleBrightnessChange;
-
+class QuizPage extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _QuizPageState createState() => _QuizPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _QuizPageState extends State<QuizPage> {
+  List<Icon> scoreKeeper = [];
 
-  void _incrementCounter() {
+  void checkAnswer(bool userPickedAnswer) {
+    bool correctAnswer = quizBrain.getQuestionAnswer();
+
     setState(() {
-      _counter++;
+      if (quizBrain.isFinished() == true) {
+        Alert(
+                context: context,
+                title: "Finished!",
+                desc: "You\'ve reached the end of the quiz.")
+            .show();
+
+        quizBrain.reset();
+
+        scoreKeeper = [];
+      } else {
+        if (userPickedAnswer == correctAnswer) {
+          scoreKeeper.add(Icon(
+            Icons.check,
+            color: Colors.green,
+          ));
+        } else {
+          scoreKeeper.add(Icon(
+            Icons.close,
+            color: Colors.red,
+          ));
+        }
+
+        quizBrain.nextQuestion();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: <Widget>[
-          _BrightnessButton(
-            handleBrightnessChange: widget.handleBrightnessChange,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          flex: 5,
+          child: Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Center(
+              child: Text(
+                quizBrain.getQuestionText(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 25.0,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.large(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
-}
-
-class _BrightnessButton extends StatelessWidget {
-  const _BrightnessButton({
-    required this.handleBrightnessChange,
-    this.showTooltipBelow = true,
-  });
-
-  final Function handleBrightnessChange;
-  final bool showTooltipBelow;
-
-  @override
-  Widget build(BuildContext context) {
-    final isBright = Theme.of(context).brightness == Brightness.light;
-    return Tooltip(
-      preferBelow: showTooltipBelow,
-      message: 'Toggle brightness',
-      child: IconButton(
-        icon: isBright
-            ? const Icon(Icons.dark_mode_outlined)
-            : const Icon(Icons.light_mode_outlined),
-        onPressed: () => handleBrightnessChange(!isBright),
-      ),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.all(15.0),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: Text(
+                'True',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                ),
+              ),
+              onPressed: () {
+                //The user picked true.
+                checkAnswer(true);
+              },
+            ),
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.all(15.0),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(
+                'False',
+                style: TextStyle(
+                  fontSize: 20.0,
+                  color: Colors.white,
+                ),
+              ),
+              onPressed: () {
+                //The user picked false.
+                checkAnswer(false);
+              },
+            ),
+          ),
+        ),
+        Row(
+          children: scoreKeeper,
+        )
+      ],
     );
   }
 }
